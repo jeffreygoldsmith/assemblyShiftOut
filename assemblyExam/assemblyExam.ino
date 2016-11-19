@@ -16,12 +16,12 @@ void setup() {
     "start:              \n"
     "ser r30             \n" // Set r30 high
     "out 0x0A, r30       \n" // Set all pins to output
-    "ldi 16, 1           \n" // Zero constant
-    "ldi r17, 0          \n" // One constant
+    "ldi 16, 1           \n" // One constant
     "lds r18, shiftData  \n" // Load data to send to shift register
-    "ldi r24, 0          \n" // Direction flag
+    "ldi r27, 1          \n" // First runthrough flag
+    "ldi r24, 1          \n" // Direction flag
     "ldi r25, 1          \n" // Mask for changing the state of an LED
-    "rjmp forwards       \n" // Begin loop
+    "rjmp end            \n" // Begin loop
 
     "init:               \n"
     "ldi r20, 128        \n" // Load register with a value to mask data with
@@ -66,9 +66,9 @@ void setup() {
     
     // 1 means forwards (r16 = 1)
     "forwards:           \n"
-    "cpse r24, r16       \n" // If the direction flag shows that we are not in forwards mode
+    "cpse r27, r16       \n" // If the first runthrough flag is true (if it is the first runthrough)
     "ldi r25, 1          \n" // Set the mask to be equal to 1
-    "ldi r24, 1          \n" // Set the direction flag to be forwards
+    "ldi r27, 0          \n" // Set the first runthrough flag to 0 (not the first runthrough)
     "eor r18, r25        \n" // Swap the colour of a single LED (ie change 10 to 01) and shift the mask
     "lsl r25             \n" 
     "eor r18, r25        \n" 
@@ -78,12 +78,14 @@ void setup() {
     "cpi r25, 128        \n" // Check if the mask is equal to 128
     "brne init           \n" // If it is not equal, loop again
     "ldi r24, 0          \n" // When we are done set the direction flag to be backwards
+    "ldi r27, 1          \n" // Set the first runthrough flag to 1 for the next runthrough
+    "rjmp end            \n"
     
     // 0 means back (r17 = 0)
     "backwards:          \n"
-    "cpse r24, r17       \n" // If the direction flag shows we are not in backwards mode
+    "cpse r27, r16       \n" // If the first runthrough flag is true (if it is the first runthrough)
     "ldi r25, 128        \n" // Set the mask equal to 128
-    "ldi r24, 0          \n"
+    "ldi r27, 0          \n" // Set the first runthrough flag to 0 (not the first runthrough)
     "eor r18, r25        \n" // Swap the colour of a single LED (ie change 01 to 10) and shift the mask
     "lsr r25             \n"
     "eor r18, r25        \n"
@@ -93,6 +95,8 @@ void setup() {
     "tst r25             \n" // Check if the mask is equal to 0
     "brne init           \n" // If it is not equal, loop again
     "ldi r24, 1          \n"
+    "ldi r27, 1          \n" // Set the first runthrough flag to 1 for the next runthrough
+    "rjmp end            \n"
 
     "end:                \n"
     "sbi 0x0B, 0x04      \n" // Bring high pin 4 (latch pin) 
